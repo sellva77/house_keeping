@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  HOMEOWNER
+  PROVIDER
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  phone     String?
+  password  String
+  role      UserRole
+  avatar    String?
+  address   String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  providerProfile   ProviderProfile?
+  bookingsAsOwner   Booking[]        @relation("HomeownerBookings")
+  bookingsAsProvider Booking[]       @relation("ProviderBookings")
+  reviewsGiven      Review[]         @relation("ReviewAuthor")
+  reviewsReceived   Review[]         @relation("ReviewTarget")
+}
+
+model ServiceCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  icon        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  providers ProviderProfile[]
+  bookings  Booking[]
+}
+
+model ProviderProfile {
+  id          Int     @id @default(autoincrement())
+  userId      Int     @unique
+  skills      String?
+  experience  Int     @default(0)  // years
+  rating      Float   @default(0)
+  totalReviews Int    @default(0)
+  hourlyRate  Float   @default(0)
+  serviceArea String?
+  isAvailable Boolean @default(true)
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categories ServiceCategory[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+}
+
+model Booking {
+  id                Int            @id @default(autoincrement())
+  homeownerId       Int
+  providerId        Int
+  serviceCategoryId Int
+  date              DateTime
+  timeSlot          String
+  address           String
+  notes             String?
+  status            BookingStatus  @default(PENDING)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  homeowner       User            @relation("HomeownerBookings", fields: [homeownerId], references: [id])
+  provider        User            @relation("ProviderBookings", fields: [providerId], references: [id])
+  serviceCategory ServiceCategory @relation(fields: [serviceCategoryId], references: [id])
+  review          Review?
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  bookingId  Int      @unique
+  authorId   Int
+  providerId Int
+  rating     Int      // 1-5
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  booking  Booking @relation(fields: [bookingId], references: [id])
+  author   User    @relation("ReviewAuthor", fields: [authorId], references: [id])
+  provider User    @relation("ReviewTarget", fields: [providerId], references: [id])
+}

@@ -1,0 +1,1 @@
+"# house_keeping"  initgit add README.mdgit commit -m "first commit"git branch -M maingit remote add origin https://github.com/sellva77/house_keeping.gitgit push -u origin main
